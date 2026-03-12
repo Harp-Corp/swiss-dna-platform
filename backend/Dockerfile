@@ -16,12 +16,15 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY package*.json ./
-RUN npm install --omit=dev
+RUN npm install --omit=dev && npm install prisma ts-node typescript @types/node
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY prisma ./prisma
+COPY tsconfig.json ./tsconfig.json
+COPY entrypoint.sh ./entrypoint.sh
+RUN chmod +x ./entrypoint.sh
 
 EXPOSE 3000
 
-CMD ["node", "dist/main"]
+ENTRYPOINT ["./entrypoint.sh"]
