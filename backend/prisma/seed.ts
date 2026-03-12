@@ -34,26 +34,26 @@ async function main() {
   });
   console.log(`Doctor created: ${doctor.email}`);
 
-  // Demo Patient: Anna Mueller
+  // Demo Patient: Gusti Brösmeli (real data from DNAlife PDF reports)
   const patientHash = await bcrypt.hash('patient123', 12);
   const patient = await prisma.user.upsert({
-    where: { email: 'anna@example.ch' },
+    where: { email: 'gusti@demo.ch' },
     update: {},
     create: {
-      email: 'anna@example.ch',
+      email: 'gusti@demo.ch',
       passwordHash: patientHash,
       role: Role.PATIENT,
       isActive: true,
       isEmailVerified: true,
       profile: {
         create: {
-          firstName: 'Anna',
-          lastName: 'Mueller',
-          dateOfBirth: new Date('1990-05-15'),
+          firstName: 'Gusti',
+          lastName: 'Brösmeli',
+          dateOfBirth: new Date('1970-12-19'),
           language: 'de',
           country: 'CH',
-          city: 'Bern',
-          postalCode: '3001',
+          city: 'Zürich',
+          postalCode: '8001',
         },
       },
       consents: {
@@ -66,81 +66,85 @@ async function main() {
   });
   console.log(`Patient created: ${patient.email}`);
 
-  // DNA Profile for Anna
+  // DNA Profile for Gusti – real variants from DNAlife/DNAlysis reports (30.12.2025)
   await prisma.dnaProfile.create({
     data: {
       userId: patient.id,
-      dietScore: 78,
-      mindScore: 65,
-      resilienceScore: 82,
-      healthScore: 71,
-      sportScore: 88,
-      ftoVariant: 'CT',
-      mthfrVariant: 'AG',
-      actn3Variant: 'RR',
+      dietScore: 62,
+      mindScore: 55,
+      resilienceScore: 48,
+      healthScore: 58,
+      sportScore: 82,
+      ftoVariant: 'AA',
+      mthfrVariant: 'CT',
+      actn3Variant: 'XX',
       apoeVariant: 'E3/E3',
-      vdrVariant: 'Ff',
-      comtVariant: 'Val/Met',
-      labName: 'Nordic DNA Labs',
-      labReference: 'NDL-2026-00142',
-      sampleDate: new Date('2026-02-20'),
-      analysisDate: new Date('2026-03-01'),
+      vdrVariant: 'TT',
+      comtVariant: 'AG',
+      labName: 'DNAlysis / DNAlife',
+      labReference: 'TST-NL-197314',
+      sampleDate: new Date('2025-12-30'),
+      analysisDate: new Date('2025-12-30'),
       gumgAccredited: true,
-      requestingPhysician: 'Dr. Andras Farkas',
+      requestingPhysician: 'Kevin Meyer',
     },
   });
-  console.log('DNA Profile created for Anna');
+  console.log('DNA Profile created for Gusti');
 
-  // Anamnesis for Anna
+  // Anamnesis for Gusti
   await prisma.anamnesis.create({
     data: {
       userId: patient.id,
-      heightCm: 168,
-      weightKg: 62,
-      bmi: 22.0,
+      heightCm: 178,
+      weightKg: 85,
+      bmi: 26.8,
       bloodType: 'A+',
       smokingStatus: 'never',
       alcoholConsumption: 'occasional',
-      activityLevel: 'moderate',
-      sleepHoursAvg: 7.5,
+      activityLevel: 'active',
+      sleepHoursAvg: 6.5,
       dietType: 'omnivore',
-      foodIntolerances: ['lactose'],
-      supplements: ['Vitamin D', 'Omega-3'],
+      foodIntolerances: [],
+      supplements: [],
       chronicDiseases: [],
       medications: [],
       allergies: ['Pollen'],
-      stressLevel: 4,
-      healthGoals: ['Gewicht halten', 'Mehr Energie', 'Besserer Schlaf'],
+      stressLevel: 6,
+      healthGoals: ['Gewicht reduzieren', 'Stressmanagement', 'Sportoptimierung', 'Mehr Resilienz'],
       completedAt: new Date(),
     },
   });
-  console.log('Anamnesis created for Anna');
+  console.log('Anamnesis created for Gusti');
 
-  // Package for Anna
+  // Package for Gusti
   const pkg = await prisma.patientPackage.create({
     data: {
       userId: patient.id,
       type: PackageType.COMPLETE,
       status: PackageStatus.ACTIVE,
-      activatedAt: new Date('2026-03-01'),
-      expiresAt: new Date('2027-03-01'),
+      activatedAt: new Date('2025-12-30'),
+      expiresAt: new Date('2026-12-30'),
       price: 990,
       currency: 'CHF',
-      evazConsultDate: new Date('2026-03-05'),
+      evazConsultDate: new Date('2026-01-15'),
       evazDoctorId: doctor.id,
     },
   });
 
-  // Recommendations for Anna
+  // Recommendations for Gusti – based on real genotype analysis
   const recs = [
-    { category: RecommendationCategory.NUTRITION, title: 'Folat-reiche Ernaehrung', content: 'MTHFR-Variante (Heterozygot): Erhoehter Bedarf an Methylfolat. Empfohlen: Blattgemuese, Huelsenfruechte, Avocado. Supplement: L-Methylfolat 400-800mcg/Tag', priority: 5 },
-    { category: RecommendationCategory.NUTRITION, title: 'Vitamin D Optimierung', content: 'VDR-Variante Ff: Reduzierte Vitamin-D-Rezeptor-Aktivitaet. Supplement: Vitamin D3 4000 IE/Tag', priority: 5 },
-    { category: RecommendationCategory.NUTRITION, title: 'Omega-3 Fettsaeuren', content: 'APOE E3/E3: Normales Lipidprofil. Supplement: EPA/DHA 1000mg/Tag', priority: 3 },
-    { category: RecommendationCategory.SPORT, title: 'Sprint & Kraft Training', content: 'ACTN3 RR Sprint-Typ: Genetische Praedisposition fuer schnelle Muskelfasern. Krafttraining und HIIT bevorzugen.', priority: 5 },
-    { category: RecommendationCategory.SPORT, title: 'Regeneration beachten', content: 'IL-6 Variante: 48h Pause zwischen intensiven Einheiten empfohlen.', priority: 3 },
-    { category: RecommendationCategory.STRESS_MANAGEMENT, title: 'COMT-optimiertes Stressmanagement', content: 'COMT Val/Met: Mittlerer Dopamin-Abbau. Meditation und Pausen empfohlen. Supplement: Magnesium Glycinat 400mg/Tag', priority: 4 },
-    { category: RecommendationCategory.SLEEP, title: 'Schlafhygiene', content: 'CLOCK-Gen Variante: Spaeter Chronotyp. Strikte Schlafenszeit und Blaulichtfilter ab 20 Uhr.', priority: 5 },
-    { category: RecommendationCategory.SUPPLEMENTS, title: 'Coenzym Q10', content: 'SOD2 Variante: Leicht reduzierte antioxidative Kapazitaet. Supplement: Coenzym Q10 100mg/Tag', priority: 2 },
+    { category: RecommendationCategory.SUPPLEMENTS, title: 'Methylfolat 400–800 μg täglich', content: 'MTHFR C677T (CT): Heterozygote Variante erfordert aktive Folatform. Methylfolat statt synthetischer Folsäure für optimale Bioverfügbarkeit.', priority: 5 },
+    { category: RecommendationCategory.SUPPLEMENTS, title: 'Vitamin D3 4000 IE täglich', content: 'VDR Fok1 (TT): Stark reduzierte Rezeptoraktivität. Spiegel alle 3 Monate kontrollieren. Kombiniert mit Vitamin K2 einnehmen.', priority: 5 },
+    { category: RecommendationCategory.SUPPLEMENTS, title: 'Omega-3 (EPA/DHA) 2g täglich', content: 'Entzündungsprofil HOCH + CRP (GG): Anti-inflammatorische Wirkung essenziell. Hochwertiges Fischöl oder Algenöl bevorzugen.', priority: 5 },
+    { category: RecommendationCategory.NUTRITION, title: 'Kreuzblütler-Gemüse täglich', content: 'GSTM1 (Deletion): Fehlende Phase-II-Entgiftung kompensieren mit Sulforaphan aus Brokkoli, Blumenkohl, Rosenkohl, Grünkohl.', priority: 5 },
+    { category: RecommendationCategory.SPORT, title: 'Krafttraining 3–4x/Woche mit Ausdaueranteil', content: 'ACE (DD) + ACTN3 (XX) + PPARGC1A (GG): Kombination aus Kraft und Ausdauer optimal. Mindestens 20 MET-Stunden/Woche wegen FTO (AA).', priority: 5 },
+    { category: RecommendationCategory.NUTRITION, title: 'Gewichtskontrolle und Zuckerreduktion', content: 'FTO (AA) + TAS1R2 (AA): Hohes Adipositas-Risiko bei starker Süsspräferenz. Mediterrane Ernährung, Zuckerkonsum strikt reduzieren.', priority: 5 },
+    { category: RecommendationCategory.SUPPLEMENTS, title: 'CoQ10 100mg + Selen 200μg täglich', content: 'SOD2 (TC) + CAT (CT) + GPX1 (CT): Moderate oxidative Stresskapazität. Antioxidative Unterstützung für Zellschutz.', priority: 3 },
+    { category: RecommendationCategory.STRESS_MANAGEMENT, title: 'Ashwagandha KSM-66', content: 'COMT (AG) + FKBP5 (CT) + BDNF (CT): Stressachse regulieren und BDNF fördern. 600mg/Tag standardisiert.', priority: 3 },
+    { category: RecommendationCategory.MENTAL_HEALTH, title: 'Sport mind. 5x/Woche für BDNF', content: 'BDNF Val66Met (CT): Niedrige Resilienz. Sport ist wichtigster BDNF-Aktivator. Kombination aus Ausdauer und Krafttraining.', priority: 3 },
+    { category: RecommendationCategory.NUTRITION, title: 'Anti-inflammatorische Ernährung', content: 'Entzündungsprofil HOCH (IL1A, IL1B multiple Varianten): Kurkuma, Ingwer, Beeren, fetter Fisch täglich integrieren.', priority: 3 },
+    { category: RecommendationCategory.SPORT, title: 'Gründliches Aufwärmen vor Sport', content: 'COL1A1 (GG): Erhöhtes Sehnenrisiko. Dynamisches Dehnen und progressiver Belastungsaufbau vor jeder Einheit.', priority: 3 },
+    { category: RecommendationCategory.SLEEP, title: 'Schlafhygiene und feste Schlafenszeit', content: 'CLOCK (TC): Späterer Chronotyp. Blaulichtfilter ab 20 Uhr, feste Schlafenszeit, Schlafzimmer kühl und dunkel.', priority: 2 },
   ];
 
   for (const rec of recs) {
@@ -148,7 +152,7 @@ async function main() {
       data: { userId: patient.id, packageId: pkg.id, ...rec },
     });
   }
-  console.log(`${recs.length} Recommendations created for Anna`);
+  console.log(`${recs.length} Recommendations created for Gusti`);
 
   // Audit logs
   await prisma.auditLog.create({
@@ -163,7 +167,7 @@ async function main() {
 
   console.log('\n=== Seed Complete ===');
   console.log('Demo Login:');
-  console.log('  Patient: anna@example.ch / patient123');
+  console.log('  Patient: gusti@demo.ch / patient123');
   console.log('  Doctor:  farkas@evaz.ch / doctor123');
 }
 

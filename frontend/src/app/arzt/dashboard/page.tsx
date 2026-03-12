@@ -4,8 +4,8 @@ import Sidebar from '@/components/Sidebar';
 import { PATIENTS } from '@/lib/mock-data';
 
 const RECENT_ACTIVITY = [
-  { text: 'Anna Mueller – DNA-Analyse abgeschlossen', time: 'Heute, 14:32' },
-  { text: 'Gusti Brosmeli – Neue Laborwerte hochgeladen', time: 'Heute, 11:15' },
+  { text: 'Gusti Brösmeli – DNA-Analyse abgeschlossen', time: 'Heute, 14:32' },
+  { text: 'Gusti Brösmeli – Neue Laborwerte hochgeladen', time: 'Heute, 11:15' },
   { text: 'Max Müller – Fragebogen ausgefüllt', time: 'Gestern, 16:45' },
   { text: 'Lisa Weber – Empfehlung aktualisiert', time: 'Gestern, 09:20' },
   { text: 'Thomas Schmid – Ersttermin vereinbart', time: '10.03.2026' },
