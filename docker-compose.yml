@@ -55,7 +55,7 @@ services:
       - '${MINIO_PORT:-9000}:9000'
       - '${MINIO_CONSOLE_PORT:-9001}:9001'
     healthcheck:
-      test: ['CMD', 'mc', 'ready', 'local']
+      test: ['CMD-SHELL', 'curl -f http://localhost:9000/minio/health/live || exit 1']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -108,6 +108,8 @@ services:
     restart: unless-stopped
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:${BACKEND_PORT:-3001}
+      HOSTNAME: 0.0.0.0
+      PORT: 3000
     ports:
       - '${FRONTEND_PORT:-3000}:3000'
     depends_on:
