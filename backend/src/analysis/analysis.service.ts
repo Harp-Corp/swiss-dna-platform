@@ -50,24 +50,23 @@ export class AnalysisService {
   private async processJob(jobId: string): Promise<void> {
     const job = this.jobs.get(jobId);
     if (!job) return;
+
     job.status = 'processing';
     job.updatedAt = new Date();
+
     try {
-      // Read raw DNA data from storage
-      const chunks: Buffer[] = [];
-      const stream = await this.storageService.downloadFile(job.inputPath);
-      await new Promise<void>((resolve, reject) => {
-        stream.on('data', (chunk: Buffer) => chunks.push(chunk));
-        stream.on('end', resolve);
-        stream.on('error', reject);
-      });
-      const rawData = Buffer.concat(chunks).toString('utf-8');
+      // Read raw DNA data from storage (downloadFile returns Buffer)
+      const rawBuffer = await this.storageService.downloadFile(job.inputPath);
+      const rawData = rawBuffer.toString('utf-8');
+
       // Basic analysis placeholder
       const result = { length: rawData.length, preview: rawData.slice(0, 100) };
-      const outputPath = `results/${job.id}/result.json`;
       const resultBuffer = Buffer.from(JSON.stringify(result));
-      await this.storageService.uploadFile(outputPath, resultBuffer, 'application/json');
-      job.outputPath = outputPath;
+
+      // uploadFile expects: (fileBuffer, originalName, mimeType, patientId, documentType)
+      await this.storageService.uploadFile(resultBuffer, `result-${job.id}.json`, 'application/json', job.userId, 'analysis-result');
+
+      job.outputPath = `results/${job.id}/result.json`;
       job.status = 'completed';
       job.updatedAt = new Date();
       this.logger.log(`Job ${jobId} completed`);
