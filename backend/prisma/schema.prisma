@@ -278,7 +278,7 @@ model DnaProfile {
   actn3Variant        String?   @db.VarChar(10)  // muscle fiber type
   apoeVariant         String?   @db.VarChar(10)  // lipid metabolism
   vdrVariant          String?   @db.VarChar(10)  // vitamin D receptor
-  comt Variant         String?   @db.VarChar(10)  // dopamine metabolism
+  comtVariant         String?   @db.VarChar(10)  // dopamine metabolism
   // Raw data reference (stored in MinIO, not DB)
   rawDataStorageKey   String?   // encrypted reference to MinIO object
   labReference        String?   @db.VarChar(100)
