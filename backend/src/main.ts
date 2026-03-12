@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, VersioningType } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
@@ -34,20 +34,11 @@ async function bootstrap() {
 
   // === CORS ===
   app.enableCors({
-    origin: configService.get<string>('CORS_ORIGIN', 'http://localhost:3001'),
+    origin: configService.get<string>('CORS_ORIGIN', 'http://localhost:3000'),
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     credentials: true,
   });
-
-  // === API Versioning ===
-  app.enableVersioning({
-    type: VersioningType.URI,
-    defaultVersion: '1',
-  });
-
-  // === Global Prefix ===
-  app.setGlobalPrefix('api');
 
   // === Validation ===
   app.useGlobalPipes(
@@ -82,11 +73,11 @@ async function bootstrap() {
       .build();
 
     const document = SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup('api/docs', app, document, {
+    SwaggerModule.setup('docs', app, document, {
       swaggerOptions: { persistAuthorization: true },
     });
 
-    console.log(`Swagger available at http://localhost:${port}/api/docs`);
+    console.log(`Swagger available at http://localhost:${port}/docs`);
   }
 
   await app.listen(port);
