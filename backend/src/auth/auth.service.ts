@@ -92,7 +92,7 @@ export class AuthService {
   async setupMfa(userId: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new UnauthorizedException();
-    const totp = new OTPAuth.TOTP({ issuer: 'Swiss DNA Platform', label: user.email, algorithm: 'SHA1', digits: 6, period: 30, secret: OTPAuth.Secret.fromRandom(20) });
+    const totp = new OTPAuth.TOTP({ issuer: 'Swiss DNA Platform', label: user.email, algorithm: 'SHA1', digits: 6, period: 30, secret: new OTPAuth.Secret({ size: 20 }) });
     const secret = totp.secret.base32;
     const qrCode = await QRCode.toDataURL(totp.toString());
     await this.prisma.user.update({ where: { id: userId }, data: { mfaSecret: secret } });
