@@ -4,6 +4,8 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Sidebar from '@/components/Sidebar';
 import DisclaimerBanner from '@/components/DisclaimerBanner';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import { useAuth } from '@/lib/auth';
 import {
   PATIENTS,
   DNA_CATEGORIES,
@@ -312,72 +314,76 @@ function DocumentsTab() {
 export default function PatientDetailPage() {
   const params = useParams();
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
+  const { user, logout } = useAuth();
+  const userName = user ? `${user.firstName} ${user.lastName}` : 'Laden...';
 
   const patient = PATIENTS.find((p) => p.id === params.id) ?? PATIENTS[0];
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <Sidebar role="arzt" userName="Dr. Farkas" />
-      <main className="flex-1 p-8">
-        {/* Back Link */}
-        <Link href="/arzt/patients" className="text-sm text-[#1B3A6B] hover:text-[#C9A84C] transition-colors mb-4 inline-block">
-          &larr; Zurück zur Patientenliste
-        </Link>
+    <ProtectedRoute allowedRoles={['DOCTOR']}>
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar role="arzt" userName={userName} onLogout={logout} />
+        <main className="flex-1 p-8">
+          {/* Back Link */}
+          <Link href="/arzt/patients" className="text-sm text-[#1B3A6B] hover:text-[#C9A84C] transition-colors mb-4 inline-block">
+            &larr; Zurück zur Patientenliste
+          </Link>
 
-        {/* Patient Header */}
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <h2 className="text-2xl font-bold text-[#1B3A6B]">{patient.name}</h2>
-              <p className="text-gray-500 mt-1">{patient.email}</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-50 text-[#1B3A6B]">
-                {patient.paket}
-              </span>
-              <span
-                className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                  patient.status === 'Aktiv' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                }`}
-              >
-                {patient.status}
-              </span>
+          {/* Patient Header */}
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-bold text-[#1B3A6B]">{patient.name}</h2>
+                <p className="text-gray-500 mt-1">{patient.email}</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-50 text-[#1B3A6B]">
+                  {patient.paket}
+                </span>
+                <span
+                  className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                    patient.status === 'Aktiv' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                  }`}
+                >
+                  {patient.status}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Tabs */}
-        <div className="flex flex-wrap gap-2 mb-6">
-          {TABS.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === tab.key
-                  ? 'bg-[#C9A84C] text-white'
-                  : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+          {/* Tabs */}
+          <div className="flex flex-wrap gap-2 mb-6">
+            {TABS.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === tab.key
+                    ? 'bg-[#C9A84C] text-white'
+                    : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
 
-        {/* Tab Content */}
-        {activeTab === 'overview' && <OverviewTab />}
-        {activeTab === 'dna' && <DnaTab />}
-        {activeTab === 'recommendations' && <RecommendationsTab />}
-        {activeTab === 'anamnesis' && <AnamnesisTab />}
-        {activeTab === 'documents' && <DocumentsTab />}
+          {/* Tab Content */}
+          {activeTab === 'overview' && <OverviewTab />}
+          {activeTab === 'dna' && <DnaTab />}
+          {activeTab === 'recommendations' && <RecommendationsTab />}
+          {activeTab === 'anamnesis' && <AnamnesisTab />}
+          {activeTab === 'documents' && <DocumentsTab />}
 
-        <DisclaimerBanner />
+          <DisclaimerBanner />
 
-        {/* Footer */}
-        <p className="text-xs text-gray-400 mt-8">
-          🇨🇭 Daten in der Schweiz verarbeitet (Demo) &bull;{' '}
-          <a href="#" className="underline">Impressum</a> – Dr. Farkas EVAZ®, Schweiz
-        </p>
-      </main>
-    </div>
+          {/* Footer */}
+          <p className="text-xs text-gray-400 mt-8">
+            🇨🇭 Daten in der Schweiz verarbeitet (Demo) &bull;{' '}
+            <a href="#" className="underline">Impressum</a> – Dr. Farkas EVAZ®, Schweiz
+          </p>
+        </main>
+      </div>
+    </ProtectedRoute>
   );
 }

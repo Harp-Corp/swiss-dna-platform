@@ -1,46 +1,72 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useAuth } from '@/lib/auth';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const { user, loading: authLoading, login } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      if (user.role === 'DOCTOR') {
+        router.replace('/arzt/dashboard');
+      } else {
+        router.replace('/patient/dashboard');
+      }
+    }
+  }, [user, authLoading, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-      if (data.access_token) {
-        localStorage.setItem('token', data.access_token);
-        window.location.href = '/patient/dashboard';
+      const res = await login(email, password);
+      if (res.user.role === 'DOCTOR') {
+        router.push('/arzt/dashboard');
+      } else {
+        router.push('/patient/dashboard');
       }
     } catch (err) {
-      console.error('Login failed', err);
+      setError(err instanceof Error ? err.message : 'Anmeldung fehlgeschlagen');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDemoLogin = (role: 'patient' | 'arzt') => {
-    if (role === 'patient') {
-      localStorage.setItem('demo_role', 'patient');
-      localStorage.setItem('demo_name', 'Gusti Brosmeli');
-      localStorage.setItem('demo_email', 'gusti@demo.ch');
-      window.location.href = '/patient/dashboard';
-    } else {
-      localStorage.setItem('demo_role', 'arzt');
-      localStorage.setItem('demo_name', 'Dr. Farkas');
-      localStorage.setItem('demo_email', 'dr.farkas@evaz.ch');
-      window.location.href = '/arzt/dashboard';
+  const handleDemoLogin = async (role: 'patient' | 'arzt') => {
+    setError('');
+    setLoading(true);
+    try {
+      if (role === 'patient') {
+        const res = await login('gusti@demo.ch', 'patient123');
+        router.push('/patient/dashboard');
+      } else {
+        const res = await login('farkas@evaz.ch', 'doctor123');
+        router.push('/arzt/dashboard');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Demo-Anmeldung fehlgeschlagen');
+    } finally {
+      setLoading(false);
     }
   };
+
+  if (authLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-slate-100">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B3A6B]" />
+      </div>
+    );
+  }
+
+  if (user) return null;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-slate-100">
@@ -51,21 +77,46 @@ export default function LoginPage() {
           <p className="text-sm text-gray-400">EVAZ - Dr. Farkas</p>
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
         {/* Demo Login Buttons */}
         <div className="space-y-3">
           <p className="text-xs text-center text-gray-400 uppercase tracking-wide">Demo-Zugang</p>
           <button
             onClick={() => handleDemoLogin('patient')}
-            className="w-full rounded-lg bg-[#1B3A6B] px-4 py-3 font-semibold text-white transition hover:bg-[#152d54]"
+            disabled={loading}
+            className="w-full rounded-lg bg-[#1B3A6B] px-4 py-3 font-semibold text-white transition hover:bg-[#152d54] disabled:opacity-50"
           >
-            Als Patient anmelden
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                Anmelden...
+              </span>
+            ) : (
+              'Als Patient anmelden'
+            )}
           </button>
+          <p className="text-xs text-center text-gray-400">gusti@demo.ch / patient123</p>
           <button
             onClick={() => handleDemoLogin('arzt')}
-            className="w-full rounded-lg border-2 border-[#C9A84C] px-4 py-3 font-semibold text-[#C9A84C] transition hover:bg-[#C9A84C] hover:text-white"
+            disabled={loading}
+            className="w-full rounded-lg border-2 border-[#C9A84C] px-4 py-3 font-semibold text-[#C9A84C] transition hover:bg-[#C9A84C] hover:text-white disabled:opacity-50"
           >
-            Als Arzt anmelden
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />
+                Anmelden...
+              </span>
+            ) : (
+              'Als Arzt anmelden'
+            )}
           </button>
+          <p className="text-xs text-center text-gray-400">farkas@evaz.ch / doctor123</p>
         </div>
 
         {/* Divider */}
@@ -106,7 +157,14 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full rounded-lg bg-[#1B3A6B] px-4 py-3 font-semibold text-white transition hover:bg-[#152d54] disabled:opacity-50"
           >
-            {loading ? 'Anmelden...' : 'Anmelden'}
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                Anmelden...
+              </span>
+            ) : (
+              'Anmelden'
+            )}
           </button>
         </form>
 

@@ -2,6 +2,8 @@
 import { useState } from 'react';
 import Sidebar from '@/components/Sidebar';
 import DisclaimerBanner from '@/components/DisclaimerBanner';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import { useAuth } from '@/lib/auth';
 
 interface FormData {
   // Persönliche Daten
@@ -140,7 +142,8 @@ export default function QuestionnairePage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<FormData>(INITIAL_DATA);
   const [submitted, setSubmitted] = useState(false);
-  const userName = 'Gusti Brosmeli';
+  const { user, logout } = useAuth();
+  const userName = user ? `${user.firstName} ${user.lastName}` : 'Laden...';
 
   const update = (field: keyof FormData) => (value: string) =>
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -255,106 +258,108 @@ export default function QuestionnairePage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <Sidebar role="patient" userName={userName} />
-      <main className="flex-1 p-8">
-        {/* Header */}
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-[#1B3A6B]">Anamnese-Fragebogen</h2>
-          <p className="text-gray-500 mt-1">
-            Bitte füllen Sie alle Abschnitte sorgfältig aus
-          </p>
-        </div>
-
-        {submitted ? (
-          <div className="bg-white rounded-xl shadow-sm p-8 border border-gray-100 text-center">
-            <span className="text-5xl block mb-4">✅</span>
-            <h3 className="text-xl font-semibold text-[#1B3A6B] mb-2">Fragebogen eingereicht</h3>
-            <p className="text-gray-500 mb-6">
-              Vielen Dank! Ihre Antworten wurden gespeichert und werden von Dr. Farkas geprüft.
+    <ProtectedRoute allowedRoles={['PATIENT']}>
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar role="patient" userName={userName} onLogout={logout} />
+        <main className="flex-1 p-8">
+          {/* Header */}
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-[#1B3A6B]">Anamnese-Fragebogen</h2>
+            <p className="text-gray-500 mt-1">
+              Bitte füllen Sie alle Abschnitte sorgfältig aus
             </p>
-            <button
-              onClick={() => { setSubmitted(false); setCurrentStep(0); setFormData(INITIAL_DATA); }}
-              className="px-6 py-2 bg-[#1B3A6B] text-white rounded-lg text-sm font-medium hover:bg-[#15305a] transition-colors"
-            >
-              Erneut ausfüllen
-            </button>
           </div>
-        ) : (
-          <>
-            {/* Progress indicator */}
-            <div className="flex items-center gap-1 mb-8 overflow-x-auto pb-2">
-              {STEPS.map((step, i) => (
-                <div key={step.key} className="flex items-center">
-                  <button
-                    onClick={() => setCurrentStep(i)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm whitespace-nowrap transition-colors ${
-                      i === currentStep
-                        ? 'bg-[#1B3A6B] text-white font-medium'
-                        : i < currentStep
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-white text-gray-500 border border-gray-200'
-                    }`}
-                  >
-                    <span>{step.icon}</span>
-                    <span className="hidden md:inline">{step.label}</span>
-                    <span className="md:hidden">{i + 1}</span>
-                  </button>
-                  {i < STEPS.length - 1 && (
-                    <div className={`w-6 h-0.5 mx-1 ${i < currentStep ? 'bg-green-400' : 'bg-gray-200'}`} />
-                  )}
-                </div>
-              ))}
-            </div>
 
-            {/* Step content */}
-            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
-              <h3 className="text-lg font-semibold text-[#1B3A6B] mb-1 flex items-center gap-2">
-                <span>{STEPS[currentStep].icon}</span>
-                {STEPS[currentStep].label}
-              </h3>
-              <p className="text-sm text-gray-400 mb-6">
-                Schritt {currentStep + 1} von {STEPS.length}
+          {submitted ? (
+            <div className="bg-white rounded-xl shadow-sm p-8 border border-gray-100 text-center">
+              <span className="text-5xl block mb-4">✅</span>
+              <h3 className="text-xl font-semibold text-[#1B3A6B] mb-2">Fragebogen eingereicht</h3>
+              <p className="text-gray-500 mb-6">
+                Vielen Dank! Ihre Antworten wurden gespeichert und werden von Dr. Farkas geprüft.
               </p>
-              {stepContent[STEPS[currentStep].key]}
-            </div>
-
-            {/* Navigation */}
-            <div className="flex justify-between">
               <button
-                onClick={() => setCurrentStep((s) => s - 1)}
-                disabled={currentStep === 0}
-                className="px-6 py-2 rounded-lg text-sm font-medium border border-gray-200 text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                onClick={() => { setSubmitted(false); setCurrentStep(0); setFormData(INITIAL_DATA); }}
+                className="px-6 py-2 bg-[#1B3A6B] text-white rounded-lg text-sm font-medium hover:bg-[#15305a] transition-colors"
               >
-                Zurück
+                Erneut ausfüllen
               </button>
-              {currentStep < STEPS.length - 1 ? (
-                <button
-                  onClick={() => setCurrentStep((s) => s + 1)}
-                  className="px-6 py-2 bg-[#1B3A6B] text-white rounded-lg text-sm font-medium hover:bg-[#15305a] transition-colors"
-                >
-                  Weiter
-                </button>
-              ) : (
-                <button
-                  onClick={handleSubmit}
-                  className="px-6 py-2 bg-[#C9A84C] text-white rounded-lg text-sm font-medium hover:bg-[#b89743] transition-colors"
-                >
-                  Absenden
-                </button>
-              )}
             </div>
-          </>
-        )}
+          ) : (
+            <>
+              {/* Progress indicator */}
+              <div className="flex items-center gap-1 mb-8 overflow-x-auto pb-2">
+                {STEPS.map((step, i) => (
+                  <div key={step.key} className="flex items-center">
+                    <button
+                      onClick={() => setCurrentStep(i)}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm whitespace-nowrap transition-colors ${
+                        i === currentStep
+                          ? 'bg-[#1B3A6B] text-white font-medium'
+                          : i < currentStep
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-white text-gray-500 border border-gray-200'
+                      }`}
+                    >
+                      <span>{step.icon}</span>
+                      <span className="hidden md:inline">{step.label}</span>
+                      <span className="md:hidden">{i + 1}</span>
+                    </button>
+                    {i < STEPS.length - 1 && (
+                      <div className={`w-6 h-0.5 mx-1 ${i < currentStep ? 'bg-green-400' : 'bg-gray-200'}`} />
+                    )}
+                  </div>
+                ))}
+              </div>
 
-        <DisclaimerBanner />
+              {/* Step content */}
+              <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
+                <h3 className="text-lg font-semibold text-[#1B3A6B] mb-1 flex items-center gap-2">
+                  <span>{STEPS[currentStep].icon}</span>
+                  {STEPS[currentStep].label}
+                </h3>
+                <p className="text-sm text-gray-400 mb-6">
+                  Schritt {currentStep + 1} von {STEPS.length}
+                </p>
+                {stepContent[STEPS[currentStep].key]}
+              </div>
 
-        {/* Footer */}
-        <p className="text-xs text-gray-400 mt-8">
-          🇨🇭 Daten in der Schweiz verarbeitet (Demo) &bull;{' '}
-          <a href="#" className="underline">Impressum</a> – Dr. Farkas EVAZ®, Schweiz
-        </p>
-      </main>
-    </div>
+              {/* Navigation */}
+              <div className="flex justify-between">
+                <button
+                  onClick={() => setCurrentStep((s) => s - 1)}
+                  disabled={currentStep === 0}
+                  className="px-6 py-2 rounded-lg text-sm font-medium border border-gray-200 text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  Zurück
+                </button>
+                {currentStep < STEPS.length - 1 ? (
+                  <button
+                    onClick={() => setCurrentStep((s) => s + 1)}
+                    className="px-6 py-2 bg-[#1B3A6B] text-white rounded-lg text-sm font-medium hover:bg-[#15305a] transition-colors"
+                  >
+                    Weiter
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleSubmit}
+                    className="px-6 py-2 bg-[#C9A84C] text-white rounded-lg text-sm font-medium hover:bg-[#b89743] transition-colors"
+                  >
+                    Absenden
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+
+          <DisclaimerBanner />
+
+          {/* Footer */}
+          <p className="text-xs text-gray-400 mt-8">
+            🇨🇭 Daten in der Schweiz verarbeitet (Demo) &bull;{' '}
+            <a href="#" className="underline">Impressum</a> – Dr. Farkas EVAZ®, Schweiz
+          </p>
+        </main>
+      </div>
+    </ProtectedRoute>
   );
 }
