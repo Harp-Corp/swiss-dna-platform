@@ -16,6 +16,9 @@ import { RecommendationsModule } from './recommendations/recommendations.module'
 import { PackagesModule } from './packages/packages.module';
 import { AuditModule } from './audit/audit.module';
 import { HealthModule } from './health/health.module';
+import { ConsentsModule } from './consents/consents.module';
+import { GdprModule } from './gdpr/gdpr.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -50,18 +53,27 @@ import { HealthModule } from './health/health.module';
 
     // === Core Modules ===
     PrismaModule,
-    StorageModule,
-    AuditModule,
-    HealthModule,
-
-    // === Feature Modules ===
     AuthModule,
     UsersModule,
+    AuditModule,
+
+    // === Health Data Modules ===
     AnamnesisModule,
-    DocumentsModule,
     DnaModule,
+    DocumentsModule,
     RecommendationsModule,
+    HealthModule,
+
+    // === Business Modules ===
     PackagesModule,
+    StorageModule,
+
+    // === Compliance & GDPR ===
+    ConsentsModule,
+    GdprModule,
+
+    // === Notifications ===
+    NotificationsModule,
   ],
 })
 export class AppModule {}
