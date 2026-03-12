@@ -33,17 +33,15 @@ export default function Navbar() {
             </>
           )}
           {isDoctor && (
-            <>
-              <Link href="/doctor" className="text-gray-600 hover:text-emerald-700 text-sm font-medium">
-                Patienten
-              </Link>
-            </>
+            <Link href="/doctor" className="text-gray-600 hover:text-emerald-700 text-sm font-medium">
+              Patienten
+            </Link>
           )}
 
           <div className="flex items-center gap-3 ml-4 pl-4 border-l border-gray-200">
-            <span className="text-sm text-gray-500">
+            <Link href="/profile" className="text-sm text-gray-500 hover:text-emerald-700">
               {user.firstName} {user.lastName}
-            </span>
+            </Link>
             <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
               {user.role}
             </span>
