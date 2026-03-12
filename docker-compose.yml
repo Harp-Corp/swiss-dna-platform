@@ -12,7 +12,6 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backend/prisma/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - '${POSTGRES_PORT:-5432}:5432'
     healthcheck:
@@ -41,29 +40,29 @@ services:
     networks:
       - sdp-network
 
-  # === MinIO Object Storage (S3-compatible) ===
+  # === MinIO (S3-compatible Storage) ===
   minio:
     image: minio/minio:latest
     container_name: sdp-minio
     restart: unless-stopped
+    command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-sdp_minio}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-changeme123}
-    command: server /data --console-address ':9001'
     volumes:
       - minio_data:/data
     ports:
       - '${MINIO_PORT:-9000}:9000'
       - '${MINIO_CONSOLE_PORT:-9001}:9001'
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      test: ['CMD', 'mc', 'ready', 'local']
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
       - sdp-network
 
-  # === NestJS Backend API ===
+  # === Backend (NestJS API) ===
   backend:
     build:
       context: ./backend
@@ -73,29 +72,30 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-development}
       DATABASE_URL: postgresql://${POSTGRES_USER:-sdp_admin}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-swiss_dna}?schema=public
-      REDIS_URL: redis://:${REDIS_PASSWORD:-changeme}@redis:6379
-      JWT_SECRET: ${JWT_SECRET:-super-secret-change-in-production}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-super-refresh-secret-change}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-changeme}
+      JWT_SECRET: ${JWT_SECRET:-generate-a-secure-random-string-here}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-generate-another-secure-random-string}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-15m}
+      JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-7d}
       MINIO_ENDPOINT: minio
       MINIO_PORT: 9000
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-sdp_minio}
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-changeme123}
       MINIO_BUCKET: ${MINIO_BUCKET:-sdp-documents}
-      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-32-byte-hex-key-change-in-prod}
-      APP_PORT: 3000
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-generate-32-byte-hex-key-for-aes256}
     ports:
-      - '${BACKEND_PORT:-3000}:3000'
+      - '${BACKEND_PORT:-3001}:3000'
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-      minio:
-        condition: service_healthy
     networks:
       - sdp-network
 
-  # === Next.js Frontend ===
+  # === Frontend (Next.js) ===
   frontend:
     build:
       context: ./frontend
@@ -103,9 +103,9 @@ services:
     container_name: sdp-frontend
     restart: unless-stopped
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3000}
+      NEXT_PUBLIC_API_URL: http://localhost:${BACKEND_PORT:-3001}
     ports:
-      - '${FRONTEND_PORT:-3001}:3000'
+      - '${FRONTEND_PORT:-3000}:3000'
     depends_on:
       - backend
     networks:
@@ -113,11 +113,8 @@ services:
 
 volumes:
   postgres_data:
-    driver: local
   redis_data:
-    driver: local
   minio_data:
-    driver: local
 
 networks:
   sdp-network:
