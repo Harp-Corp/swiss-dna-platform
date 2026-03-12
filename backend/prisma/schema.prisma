@@ -1,0 +1,384 @@
+// Swiss DNA Platform - Prisma Schema
+// revDSG/GUMG compliant data model
+// Privacy by Design: sensitive DNA data separated from identity
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum Role {
+  PATIENT
+  DOCTOR
+  LAB_TECHNICIAN
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+enum DocumentType {
+  BLOOD_TEST
+  DNA_RAW_DATA
+  DNA_REPORT
+  IMAGING
+  LAB_RESULT
+  ANAMNESIS
+  CONSENT_FORM
+  OTHER
+}
+
+enum DocumentStatus {
+  PENDING
+  PROCESSING
+  ANALYZED
+  ERROR
+}
+
+enum PackageType {
+  BASIC
+  DIET
+  MIND
+  RESILIENCE
+  HEALTH
+  SPORT
+  COMPLETE
+}
+
+enum PackageStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  PENDING_PAYMENT
+}
+
+enum RecommendationCategory {
+  NUTRITION
+  SPORT
+  LIFESTYLE
+  SUPPLEMENTS
+  MENTAL_HEALTH
+  SLEEP
+  STRESS_MANAGEMENT
+}
+
+enum ConsentType {
+  DATA_PROCESSING
+  DNA_ANALYSIS
+  MARKETING
+  RESEARCH
+  TELEMEDICINE
+}
+
+enum AuditAction {
+  LOGIN
+  LOGOUT
+  LOGIN_FAILED
+  REGISTER
+  PASSWORD_CHANGE
+  DATA_ACCESS
+  DATA_EXPORT
+  DATA_DELETE
+  DOCUMENT_UPLOAD
+  DOCUMENT_ACCESS
+  DNA_ANALYSIS_STARTED
+  DNA_ANALYSIS_COMPLETED
+  RECOMMENDATION_GENERATED
+  CONSENT_GIVEN
+  CONSENT_REVOKED
+  PROFILE_UPDATE
+  ADMIN_ACTION
+}
+
+// ============================================================
+// IDENTITY / AUTH (separated from health data - Privacy by Design)
+// ============================================================
+
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  passwordHash      String
+  role              Role      @default(PATIENT)
+  isActive          Boolean   @default(true)
+  isEmailVerified   Boolean   @default(false)
+  emailVerifyToken  String?   @unique
+  mfaEnabled        Boolean   @default(false)
+  mfaSecret         String?   // TOTP secret (encrypted)
+  refreshTokenHash  String?
+  lastLoginAt       DateTime?
+  loginAttempts     Int       @default(0)
+  lockedUntil       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  deletedAt         DateTime? // soft delete for GDPR
+
+  // Relations
+  profile           UserProfile?
+  sessions          Session[]
+  auditLogs         AuditLog[]
+  consents          Consent[]
+  patientPackages   PatientPackage[]
+  documents         Document[]        @relation("PatientDocuments")
+  uploadedDocuments Document[]        @relation("DoctorUploads")
+  anamneses         Anamnesis[]
+  recommendations   Recommendation[]
+  dnaProfiles       DnaProfile[]
+
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+model UserProfile {
+  id               String    @id @default(cuid())
+  userId           String    @unique
+  firstName        String    @db.VarChar(100)
+  lastName         String    @db.VarChar(100)
+  dateOfBirth      DateTime?
+  gender           Gender?
+  phone            String?   @db.VarChar(30)
+  street           String?   @db.VarChar(200)
+  city             String?   @db.VarChar(100)
+  postalCode       String?   @db.VarChar(20)
+  country          String    @default("CH") @db.VarChar(2)
+  language         String    @default("de") @db.VarChar(5)
+  avatarUrl        String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  refreshToken String   @unique
+  userAgent    String?
+  ipAddress    String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+// ============================================================
+// COMPLIANCE / AUDIT
+// ============================================================
+
+model AuditLog {
+  id         String      @id @default(cuid())
+  userId     String?
+  action     AuditAction
+  resource   String?
+  resourceId String?
+  ipAddress  String?
+  userAgent  String?
+  metadata   Json?       // additional context
+  createdAt  DateTime    @default(now())
+
+  user       User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model Consent {
+  id          String      @id @default(cuid())
+  userId      String
+  type        ConsentType
+  given       Boolean     @default(false)
+  givenAt     DateTime?
+  revokedAt   DateTime?
+  version     String      @default("1.0") // consent document version
+  ipAddress   String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+  @@map("consents")
+}
+
+// ============================================================
+// HEALTH & DNA DATA (separate schema for enhanced protection)
+// ============================================================
+
+model Anamnesis {
+  id                    String    @id @default(cuid())
+  userId                String
+  // Basic Health
+  heightCm              Float?
+  weightKg              Float?
+  bmi                   Float?
+  bloodType             String?   @db.VarChar(5)
+  // Lifestyle
+  smokingStatus         String?   @db.VarChar(50)
+  alcoholConsumption    String?   @db.VarChar(50)
+  activityLevel         String?   @db.VarChar(50)
+  sleepHoursAvg         Float?
+  // Nutrition
+  dietType              String?   @db.VarChar(100)
+  foodIntolerances      String[]  // array of intolerances
+  supplements           String[]  // current supplements
+  // Medical History
+  chronicDiseases       String[]  
+  medications           String[]  
+  allergies             String[]  
+  familyHistory         Json?     // structured family medical history
+  // Mental Health
+  stressLevel           Int?      // 1-10
+  mentalHealthNotes     String?   @db.Text
+  // Goals
+  healthGoals           String[]  
+  // Metadata
+  completedAt           DateTime?
+  version               Int       @default(1)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("anamneses")
+}
+
+model DnaProfile {
+  id                  String    @id @default(cuid())
+  userId              String
+  // Nordic DNA report categories
+  dietScore           Float?
+  mindScore           Float?
+  resilienceScore     Float?
+  healthScore         Float?
+  sportScore          Float?
+  // Key Genetic Markers
+  ftoVariant          String?   @db.VarChar(10)  // obesity gene
+  mthfrVariant        String?   @db.VarChar(10)  // methylation
+  actn3Variant        String?   @db.VarChar(10)  // muscle fiber type
+  apoeVariant         String?   @db.VarChar(10)  // lipid metabolism
+  vdrVariant          String?   @db.VarChar(10)  // vitamin D receptor
+  comt Variant         String?   @db.VarChar(10)  // dopamine metabolism
+  // Raw data reference (stored in MinIO, not DB)
+  rawDataStorageKey   String?   // encrypted reference to MinIO object
+  labReference        String?   @db.VarChar(100)
+  labName             String?   @db.VarChar(200)
+  sampleDate          DateTime?
+  analysisDate        DateTime?
+  // GUMG compliance
+  gumgAccredited      Boolean   @default(false)
+  requestingPhysician String?   @db.VarChar(200)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("dna_profiles")
+}
+
+// ============================================================
+// DOCUMENTS
+// ============================================================
+
+model Document {
+  id              String         @id @default(cuid())
+  patientId       String
+  uploadedById    String
+  type            DocumentType
+  status          DocumentStatus @default(PENDING)
+  originalName    String         @db.VarChar(500)
+  storageKey      String         // encrypted MinIO key
+  mimeType        String         @db.VarChar(100)
+  sizeBytes       Int
+  checksumSha256  String         // integrity verification
+  isEncrypted     Boolean        @default(true)
+  // OCR / Analysis results
+  ocrText         String?        @db.Text
+  analysisResult  Json?          // structured extracted data
+  // Metadata
+  notes           String?        @db.Text
+  expiresAt       DateTime?      // for DNA raw data retention
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  deletedAt       DateTime?      // soft delete
+
+  patient         User           @relation("PatientDocuments", fields: [patientId], references: [id])
+  uploadedBy      User           @relation("DoctorUploads", fields: [uploadedById], references: [id])
+
+  @@index([patientId])
+  @@index([type])
+  @@index([status])
+  @@map("documents")
+}
+
+// ============================================================
+// PACKAGES & RECOMMENDATIONS
+// ============================================================
+
+model PatientPackage {
+  id              String        @id @default(cuid())
+  userId          String
+  type            PackageType
+  status          PackageStatus @default(PENDING_PAYMENT)
+  activatedAt     DateTime?
+  expiresAt       DateTime?
+  price           Float?
+  currency        String        @default("CHF") @db.VarChar(3)
+  paymentRef      String?       @db.VarChar(200)
+  // EVAZ concept integration
+  evazConsultDate DateTime?
+  evazDoctorId    String?       // reference to doctor user
+  notes           String?       @db.Text
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recommendations Recommendation[]
+
+  @@index([userId])
+  @@index([status])
+  @@map("patient_packages")
+}
+
+model Recommendation {
+  id          String                  @id @default(cuid())
+  userId      String
+  packageId   String?
+  category    RecommendationCategory
+  title       String                  @db.VarChar(500)
+  content     String                  @db.Text
+  priority    Int                     @default(1) // 1-5
+  basedOn     Json?                   // which markers/data triggered this
+  isRead      Boolean                 @default(false)
+  readAt      DateTime?
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+
+  user        User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  package     PatientPackage?         @relation(fields: [packageId], references: [id])
+
+  @@index([userId])
+  @@index([category])
+  @@map("recommendations")
+}
