@@ -13,29 +13,37 @@ export interface UploadResult {
 @Injectable()
 export class StorageService implements OnModuleInit {
   private readonly logger = new Logger(StorageService.name);
-  private minioClient: Minio.Client;
+  private minioClient: Minio.Client | null = null;
   private readonly bucketName: string;
+  private available = false;
 
   constructor(private configService: ConfigService) {
-    this.minioClient = new Minio.Client({
-      endPoint: configService.get<string>('MINIO_ENDPOINT', 'localhost'),
-      port: configService.get<number>('MINIO_PORT', 9000),
-      useSSL: configService.get<string>('NODE_ENV') === 'production',
-      accessKey: configService.get<string>('MINIO_ACCESS_KEY', ''),
-      secretKey: configService.get<string>('MINIO_SECRET_KEY', ''),
-    });
+    try {
+      this.minioClient = new Minio.Client({
+        endPoint: configService.get<string>('MINIO_ENDPOINT', 'localhost'),
+        port: parseInt(configService.get<string>('MINIO_PORT', '9000'), 10),
+        useSSL: configService.get<string>('NODE_ENV') === 'production',
+        accessKey: configService.get<string>('MINIO_ACCESS_KEY', ''),
+        secretKey: configService.get<string>('MINIO_SECRET_KEY', ''),
+      });
+    } catch (err) {
+      this.logger.warn('MinIO client init failed, storage disabled', err);
+    }
     this.bucketName = configService.get<string>('MINIO_BUCKET', 'sdp-documents');
   }
 
   async onModuleInit() {
+    if (!this.minioClient) return;
     try {
       const exists = await this.minioClient.bucketExists(this.bucketName);
       if (!exists) {
         await this.minioClient.makeBucket(this.bucketName, 'eu-central-1');
         this.logger.log(`Created MinIO bucket: ${this.bucketName}`);
       }
+      this.available = true;
+      this.logger.log('MinIO storage connected');
     } catch (error) {
-      this.logger.error('Failed to init MinIO bucket', error);
+      this.logger.warn('MinIO not available — file storage disabled (demo mode)');
     }
   }
 
