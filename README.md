@@ -60,10 +60,21 @@ swiss-dna-platform/
 |   |-- prisma/schema.prisma
 |   |-- Dockerfile
 |-- frontend/
-|   |-- src/app/
-|   |   |-- page.tsx           # Login
-|   |   |-- dashboard/page.tsx # DNA Dashboard
+|   |-- src/
+|   |   |-- app/
+|   |   |   |-- page.tsx            # Login
+|   |   |   |-- register/page.tsx   # Registrierung
+|   |   |   |-- dashboard/
+|   |   |   |   |-- page.tsx        # DNA Dashboard (Patient)
+|   |   |   |   |-- upload/page.tsx # DNA Upload
+|   |   |   |   |-- recommendations/page.tsx # Empfehlungen
+|   |   |   |-- doctor/page.tsx     # Arzt Portal
+|   |   |-- lib/api.ts              # API Helper
+|   |-- Dockerfile
+|   |-- next.config.js
 |   |-- tailwind.config.ts
+|   |-- tsconfig.json
+|   |-- postcss.config.js
 |-- docker-compose.yml
 |-- .env.example
 ```
