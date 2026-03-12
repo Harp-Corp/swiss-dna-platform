@@ -13,10 +13,15 @@ async function request(endpoint: string, options: RequestInit = {}) {
   if (res.status === 401) {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('token');
-      window.location.href = '/';
+      localStorage.removeItem('refreshToken');
     }
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.message || 'Sitzung abgelaufen. Bitte erneut anmelden.');
   }
-  if (!res.ok) throw new Error(`API Error: ${res.status}`);
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.message || `API Fehler: ${res.status}`);
+  }
   return res.json();
 }
 

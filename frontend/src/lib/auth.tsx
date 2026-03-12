@@ -16,10 +16,14 @@ export interface User {
   consentDate?: string;
 }
 
+interface LoginResponse {
+  user: { id: string; email: string; role: string; firstName?: string; lastName?: string };
+}
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<LoginResponse>;
   register: (data: { email: string; password: string; firstName: string; lastName: string }) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -50,13 +54,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshUser().finally(() => setLoading(false));
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<LoginResponse> => {
     const res = await api.login(email, password);
     localStorage.setItem('token', res.accessToken);
     if (res.refreshToken) {
       localStorage.setItem('refreshToken', res.refreshToken);
     }
     await refreshUser();
+    return { user: res.user };
   };
 
   const register = async (data: { email: string; password: string; firstName: string; lastName: string }) => {
@@ -77,6 +82,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       localStorage.removeItem('token');
       localStorage.removeItem('refreshToken');
+      localStorage.removeItem('demo_role');
+      localStorage.removeItem('demo_name');
+      localStorage.removeItem('demo_email');
       setUser(null);
       window.location.href = '/';
     }
