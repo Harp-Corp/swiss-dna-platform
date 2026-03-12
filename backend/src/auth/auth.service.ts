@@ -89,6 +89,28 @@ export class AuthService {
     return { message: 'Logged out successfully' };
   }
 
+  async refreshTokens(userId: string, refreshToken: string) {
+    const sessions = await this.prisma.session.findMany({ where: { userId } });
+    let validSession = null;
+    for (const s of sessions) {
+      if (await bcrypt.compare(refreshToken, s.refreshToken)) {
+        validSession = s;
+        break;
+      }
+    }
+    if (!validSession) throw new UnauthorizedException('Invalid refresh token');
+    if (validSession.expiresAt < new Date()) {
+      await this.prisma.session.delete({ where: { id: validSession.id } });
+      throw new UnauthorizedException('Refresh token expired');
+    }
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !user.isActive) throw new UnauthorizedException('User not found or inactive');
+    const tokens = await this.generateTokens(user.id, user.email, user.role);
+    const newRefreshHash = await bcrypt.hash(tokens.refreshToken, 10);
+    await this.prisma.session.update({ where: { id: validSession.id }, data: { refreshToken: newRefreshHash, expiresAt: new Date(Date.now() + 7 * 24 * 3600000) } });
+    return { accessToken: tokens.accessToken, refreshToken: tokens.refreshToken };
+  }
+
   async setupMfa(userId: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new UnauthorizedException();
