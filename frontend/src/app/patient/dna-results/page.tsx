@@ -64,7 +64,7 @@ function CategoryOverviewCard({ category }: { category: DnaCategory }) {
 
 export default function DnaResultsPage() {
   const [activeTab, setActiveTab] = useState<string>('overview');
-  const userName = 'Gusti Brosmeli';
+  const userName = 'Gusti Brösmeli';
 
   const tabs = [
     { key: 'overview', label: 'Übersicht' },
@@ -81,7 +81,7 @@ export default function DnaResultsPage() {
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-[#1B3A6B]">DNA-Resultate</h2>
           <p className="text-gray-500 mt-1">
-            Patient: {userName} &middot; Analysedatum: 01.03.2026
+            Patient: {userName} &middot; Analysedatum: 30.12.2025
           </p>
         </div>
 

@@ -27,10 +27,10 @@ const RATING_STYLES: Record<MarkerRating, { bg: string; text: string; label: str
 };
 
 const ANAMNESIS_DATA = {
-  persoenlich: { Alter: '45', Geschlecht: 'Männlich', Grösse: '178 cm', Gewicht: '82 kg', Blutgruppe: 'A+' },
-  gesundheit: { 'Chronische Erkrankungen': 'Keine', Allergien: 'Pollen (saisonal)', Medikamente: 'Keine regelmässigen', 'Letzte Vorsorge': '15.01.2026' },
-  lebensstil: { Raucher: 'Nein', Alkohol: 'Gelegentlich', Sport: '2–3x/Woche', Schlaf: '6–7 Stunden', Stresslevel: 'Mittel' },
-  ernaehrung: { Ernährungstyp: 'Mischkost', Unverträglichkeiten: 'Leichte Laktoseintoleranz', 'Mahlzeiten/Tag': '3', Wasserkonsum: '1.5–2 Liter' },
+  persoenlich: { Alter: '55', Geschlecht: 'Männlich', Grösse: '178 cm', Gewicht: '85 kg', Blutgruppe: 'A+', Geburtsdatum: '19.12.1970' },
+  gesundheit: { 'Chronische Erkrankungen': 'Keine bekannt', Allergien: 'Pollen (saisonal)', Medikamente: 'Keine', 'Letzte Vorsorge': '15.11.2025' },
+  lebensstil: { Raucher: 'Nein', Alkohol: 'Gelegentlich', Sport: '3–4x/Woche', Schlaf: '6–7 Stunden', Stresslevel: 'Mittel-Hoch' },
+  ernaehrung: { Ernährungstyp: 'Mischkost (empfohlen: Mediterran)', Unverträglichkeiten: 'Keine bekannt', 'Mahlzeiten/Tag': '3', Wasserkonsum: '1.5–2 Liter' },
 };
 
 type TabKey = 'overview' | 'dna' | 'recommendations' | 'anamnesis' | 'documents';
@@ -100,7 +100,9 @@ function OverviewTab() {
         <h4 className="font-semibold text-[#1B3A6B] mb-4">Zusammenfassung</h4>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
           <div>
-            <p className="text-2xl font-bold text-[#1B3A6B]">20</p>
+            <p className="text-2xl font-bold text-[#1B3A6B]">
+              {DNA_CATEGORIES.reduce((s, c) => s + c.markers.length, 0)}
+            </p>
             <p className="text-sm text-gray-500">Marker total</p>
           </div>
           <div>
