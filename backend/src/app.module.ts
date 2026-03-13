@@ -35,16 +35,26 @@ import { NotificationsModule } from './notifications/notifications.module';
       { name: 'long', ttl: 60000, limit: 200 },
     ]),
 
-    // === Redis Cache ===
+    // === Cache (Redis with retry, graceful fallback) ===
     CacheModule.registerAsync({
       isGlobal: true,
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => ({
-        store: redisStore,
-        url: configService.get<string>('REDIS_URL'),
-        ttl: 60 * 1000, // 60 seconds default
-      }),
+      useFactory: async (configService: ConfigService) => {
+        const redisUrl = configService.get<string>('REDIS_URL');
+        if (redisUrl) {
+          return {
+            store: redisStore,
+            url: redisUrl,
+            ttl: 60 * 1000,
+            retryStrategy: (times: number) => Math.min(times * 200, 5000),
+            maxRetriesPerRequest: 3,
+            lazyConnect: true,
+            enableOfflineQueue: true,
+          };
+        }
+        return { ttl: 60 * 1000 };
+      },
     }),
 
     // === Events & Scheduling ===
