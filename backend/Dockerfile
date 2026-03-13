@@ -15,7 +15,8 @@ RUN npm run build
 # Prune dev dependencies after build
 RUN npm prune --omit=dev
 # Re-add runtime tools needed for entrypoint (prisma db push, ts-node seed)
-RUN npm install prisma ts-node typescript @types/node --save-optional
+# Pin prisma to 5.22.0 to avoid breaking changes in Prisma 7.x
+RUN npm install prisma@5.22.0 ts-node typescript @types/node --save-optional --no-save
 
 # ---- Production Stage ----
 FROM node:20-alpine AS production
