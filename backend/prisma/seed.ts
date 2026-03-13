@@ -6,12 +6,24 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('Seeding Swiss DNA Platform...');
 
+  // Clean existing data (in correct order for foreign key constraints)
+  console.log('Cleaning existing data...');
+  await prisma.auditLog.deleteMany({});
+  await prisma.recommendation.deleteMany({});
+  await prisma.patientPackage.deleteMany({});
+  await prisma.anamnesis.deleteMany({});
+  await prisma.dnaProfile.deleteMany({});
+  await prisma.consent.deleteMany({});
+  await prisma.session.deleteMany({});
+  await prisma.document.deleteMany({});
+  await prisma.userProfile.deleteMany({});
+  await prisma.user.deleteMany({});
+  console.log('Database cleaned.');
+
   // Demo Doctor: Dr. Farkas (EVAZ)
   const doctorHash = await bcrypt.hash('doctor123', 12);
-  const doctor = await prisma.user.upsert({
-    where: { email: 'farkas@evaz.ch' },
-    update: {},
-    create: {
+  const doctor = await prisma.user.create({
+    data: {
       email: 'farkas@evaz.ch',
       passwordHash: doctorHash,
       role: Role.DOCTOR,
@@ -36,10 +48,8 @@ async function main() {
 
   // Demo Patient: Gusti Brösmeli (real data from DNAlife PDF reports)
   const patientHash = await bcrypt.hash('patient123', 12);
-  const patient = await prisma.user.upsert({
-    where: { email: 'gusti@demo.ch' },
-    update: {},
-    create: {
+  const patient = await prisma.user.create({
+    data: {
       email: 'gusti@demo.ch',
       passwordHash: patientHash,
       role: Role.PATIENT,
