@@ -47,7 +47,11 @@ export class AuthService {
     });
     await this.auditService.log({ userId: user.id, action: AuditAction.REGISTER, ipAddress });
     this.eventEmitter.emit('user.registered', { user, emailVerifyToken });
-    return { message: 'Registration successful. Please verify your email.', userId: user.id };
+    // In development/demo mode: auto-login after register
+    const tokens = await this.generateTokens(user.id, user.email, user.role);
+    const refreshTokenHash = await bcrypt.hash(tokens.refreshToken, 10);
+    await this.prisma.session.create({ data: { userId: user.id, refreshToken: refreshTokenHash, ipAddress, expiresAt: new Date(Date.now() + 7 * 24 * 3600000) } });
+    return { message: 'Registration successful.', userId: user.id, accessToken: tokens.accessToken, refreshToken: tokens.refreshToken, user: { id: user.id, email: user.email, role: user.role, firstName: user.profile?.firstName, lastName: user.profile?.lastName } };
   }
 
   async verifyEmail(token: string) {

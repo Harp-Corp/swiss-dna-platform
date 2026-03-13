@@ -8,16 +8,16 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get('me')
-  async getMe(@Request() req: { user: { sub: string } }) {
-    return this.usersService.findById(req.user.sub);
+  async getMe(@Request() req: { user: { id: string } }) {
+    return this.usersService.findById(req.user.id);
   }
 
   @Patch('me')
   async updateMe(
-    @Request() req: { user: { sub: string } },
+    @Request() req: { user: { id: string } },
     @Body() body: { firstName?: string; lastName?: string },
   ) {
-    return this.usersService.updateProfile(req.user.sub, body);
+    return this.usersService.updateProfile(req.user.id, body);
   }
 
   @Get(':id')

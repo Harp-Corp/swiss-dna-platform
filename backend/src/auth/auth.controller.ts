@@ -9,7 +9,7 @@ import { LoginDto } from './dto/login.dto';
 import { CurrentUser } from './decorators/current-user.decorator';
 
 @ApiTags('auth')
-@Controller({ path: 'auth', version: '1' })
+@Controller('auth')
 @UseGuards(ThrottlerGuard)
 export class AuthController {
   constructor(private authService: AuthService) {}
@@ -43,7 +43,7 @@ export class AuthController {
     @Body('refreshToken') refreshToken: string,
     @Req() req: Request,
   ) {
-    return this.authService.logout(user.sub, refreshToken, req.ip);
+    return this.authService.logout(user.id, refreshToken, req.ip);
   }
 
   @Post('refresh')
@@ -61,7 +61,7 @@ export class AuthController {
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Setup MFA - returns QR code and secret' })
   async setupMfa(@CurrentUser() user: any) {
-    return this.authService.setupMfa(user.sub);
+    return this.authService.setupMfa(user.id);
   }
 
   @Post('mfa/confirm')
@@ -72,7 +72,7 @@ export class AuthController {
     @CurrentUser() user: any,
     @Body('totpCode') totpCode: string,
   ) {
-    return this.authService.confirmMfa(user.sub, totpCode);
+    return this.authService.confirmMfa(user.id, totpCode);
   }
 
   @Get('me')
